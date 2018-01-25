@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?ccsproject version="1.0"?>
+<projectOptions>
+	<deviceVariant value="com.ti.ccstudio.deviceModel.C6000.GenericC64xPlusDevice"/>
+	<deviceFamily value="C6000"/>
+	<deviceEndianness value="little"/>
+	<codegenToolVersion value="8.1.0"/>
+	<isElfFormat value="true"/>
+	<rts value="libc.a"/>
+	<createSlaveProjects value=""/>
+	<filesToOpen value=""/>
+	<origin value="C:/ti/pdk_am57xx_1_0_4/packages/MyExampleProjects/GPIO_LedBlink_evmAM572x_c66xExampleProject"/>
+	<isTargetManual value="false"/>
+</projectOptions>
