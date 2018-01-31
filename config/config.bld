@@ -59,13 +59,13 @@ var evmDRA7XX_ExtMemMapDsp = {
     EXT_DATA: {
         name: "EXT_DATA",
         base: 0x95100000,
-        len:  0x00100000,
+        len:  0x00500000,
         space: "data",
         access: "RW"
     },
     EXT_HEAP: {
         name: "EXT_HEAP",
-        base: 0x95200000,
+        base: 0x95600000,
         len:  0x00300000,
         space: "data",
         access: "RW"

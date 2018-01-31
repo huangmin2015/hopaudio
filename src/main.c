@@ -221,10 +221,10 @@ void gpio_test(UArg arg0, UArg arg1) {
 
 //BWC, declare ipc_main as external
 extern Int ipc_main();
-
+extern Void audio_main(Void);
 //BWC declare as external, will call directly instead of having BIOS call it, change needed in cfg file too
 extern Void IpcMgr_ipcStartup(Void);
-
+extern Void Audio_echo_Task();
 #ifndef BARE_METAL
 /*
  *  ======== main ========
@@ -234,7 +234,7 @@ int main(void) {
 	Clock_Params clockParams;
 	Error_Block eb;
 	int callIpcStartup = 1;
-	Log_print0(Diags_ENTRY, " 123456 main inti by hum...:");
+	Log_print0(Diags_ENTRY, " 20180215 main inti by hum...:");
 	/* Call board init functions */
 	//Board_initGPIO();
 #if defined(IDK_AM572X) || defined(IDK_AM571X)
@@ -242,28 +242,25 @@ int main(void) {
 #endif
 
 	Error_init(&eb);
-	task = Task_create(gpio_test, NULL, &eb);
+	//task = Task_create(gpio_test, NULL, &eb);
+#if 1
+	task = Task_create(Audio_echo_Task, NULL, &eb);
 	if (task == NULL) {
 		System_printf("Task_create() failed!\n");
 		BIOS_exit(0);
 	}
-
-	Clock_Params_init(&clockParams);
-	clockParams.period = 125;
-	clockParams.startFlag = FALSE;
-	hClock = Clock_create(clockFxn, 5, &clockParams, &eb);
-	if (hClock == NULL) {
-		System_printf("Clock_create() failed!\n");
-		BIOS_exit(0);
-	}
-
+	Log_print0(Diags_ENTRY, " Task_create Audio_echo_Task...:");
+#endif
 	//BWC, call the ipc main function
+	audio_main();
+#if 0  //close ipc
 	ipc_main();
 
 	if (callIpcStartup) {
 		IpcMgr_ipcStartup();
 	}
-
+    Log_print0(Diags_ENTRY, "IpcMgr_ipcStartup...:");
+#endif
 	/* Start BIOS */
 	BIOS_start();
 	return (0);

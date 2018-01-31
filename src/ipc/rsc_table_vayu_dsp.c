@@ -78,7 +78,7 @@
 /* Co-locate alongside TILER region for easier flushing */
 #define DSP_MEM_IOBUFS          0x80000000
 #define DSP_MEM_DATA            0x95100000
-#define DSP_MEM_HEAP            0x96200000
+#define DSP_MEM_HEAP            0x95600000
 
 #define DSP_MEM_IPC_DATA        0x9F000000
 #define DSP_MEM_IPC_VRING       0xA0000000
@@ -87,10 +87,21 @@
 #define DSP_MEM_VRING_BUFS0     0xA0040000
 #define DSP_MEM_VRING_BUFS1     0xA0080000
 
+#define DSP_PERIPHERAL_EDMA             0x43300000
+#define L3_PERIPHERAL_EDMA              0x43300000
+#define DSP_MCASP1_DATA             0x45800000
+#define L3_MCASP1_DATA              0x45800000
+
+#define DSP_MCASP2_DATA             0x45c00000
+#define L3_MCASP2_DATA              0x45c00000
+
+#define DSP_DDR_DATA             0x9B000000
+#define L3_DDR_DATA               0x9B000000
+
 #define DSP_MEM_IPC_VRING_SIZE  SZ_1M
 #define DSP_MEM_IPC_DATA_SIZE   SZ_1M
 #define DSP_MEM_TEXT_SIZE       SZ_1M
-#define DSP_MEM_DATA_SIZE       SZ_1M
+#define DSP_MEM_DATA_SIZE       (SZ_1M * 5)
 #define DSP_MEM_HEAP_SIZE       (SZ_1M * 3)
 #define DSP_MEM_IOBUFS_SIZE     (SZ_1M * 90)
 
@@ -124,7 +135,7 @@
 struct my_resource_table {
     struct resource_table base;
 
-    UInt32 offset[17];  /* Should match 'num' in actual definition */
+    UInt32 offset[21];  /* Should match 'num' in actual definition */
 
     /* rpmsg vdev entry */
     struct fw_rsc_vdev rpmsg_vdev;
@@ -178,6 +189,15 @@ struct my_resource_table {
 
     /* devmem entry */
     struct fw_rsc_devmem devmem10;
+    /* devmem entry */
+    struct fw_rsc_devmem devmem11;
+
+    /* devmem entry */
+    struct fw_rsc_devmem devmem12;
+    /* devmem entry */
+        struct fw_rsc_devmem devmem13;
+        /* devmem entry */
+            struct fw_rsc_devmem devmem14;
 };
 
 //BWC added extern declaration
@@ -189,7 +209,7 @@ extern char ti_trace_SysMin_Module_State_0_outbuf__A;
 
 struct my_resource_table ti_ipc_remoteproc_ResourceTable = {
     1,      /* we're the first version that implements this */
-    17,     /* number of entries in the table */
+    21,     /* number of entries in the table */
     0, 0,   /* reserved, must be zero */
     /* offsets to entries */
     {
@@ -210,6 +230,10 @@ struct my_resource_table ti_ipc_remoteproc_ResourceTable = {
         offsetof(struct my_resource_table, devmem8),
         offsetof(struct my_resource_table, devmem9),
         offsetof(struct my_resource_table, devmem10),
+        offsetof(struct my_resource_table, devmem11),
+        offsetof(struct my_resource_table, devmem12),
+        offsetof(struct my_resource_table, devmem13),
+        offsetof(struct my_resource_table, devmem14),
     },
 
     /* rpmsg vdev entry */
@@ -314,6 +338,29 @@ struct my_resource_table ti_ipc_remoteproc_ResourceTable = {
         TYPE_DEVMEM,
         DSP_PERIPHERAL_DMM, L3_PERIPHERAL_DMM,
         SZ_1M, 0, 0, "DSP_PERIPHERAL_DMM",
+    },
+
+    {
+        TYPE_DEVMEM,
+        DSP_PERIPHERAL_EDMA, L3_PERIPHERAL_EDMA,
+        SZ_1M*3, 0, 0, "DSP_PERIPHERAL_EDMA",
+    },
+    {
+        TYPE_DEVMEM,
+        DSP_DDR_DATA, L3_DDR_DATA,
+        SZ_1M, 0, 0, "DSP_DDR_DATA",
+    },
+
+    {
+        TYPE_DEVMEM,
+        DSP_MCASP1_DATA, L3_MCASP1_DATA,
+        SZ_4M, 0, 0, "DSP_MCASP1_DATA",
+    },
+
+    {
+         TYPE_DEVMEM,
+         DSP_MCASP2_DATA, L3_MCASP2_DATA,
+         SZ_1M*8, 0, 0, "DSP_MCASP2_DATA",
     },
 };
 

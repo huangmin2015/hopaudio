@@ -9,6 +9,6 @@
 	<rts value="libc.a"/>
 	<createSlaveProjects value=""/>
 	<filesToOpen value=""/>
-	<origin value="C:/ti/pdk_am57xx_1_0_4/packages/MyExampleProjects/GPIO_LedBlink_evmAM572x_c66xExampleProject"/>
+	<origin value="D:/src/ccsWork/ccs_Audio_Captrue_with_ipc"/>
 	<isTargetManual value="false"/>
 </projectOptions>
