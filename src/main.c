@@ -253,7 +253,7 @@ int main(void) {
 #endif
 	//BWC, call the ipc main function
 	audio_main();
-#if 0  //close ipc
+#if 1  //close ipc
 	ipc_main();
 
 	if (callIpcStartup) {

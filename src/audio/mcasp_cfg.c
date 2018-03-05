@@ -152,7 +152,7 @@ Mcasp_HwSetupData mcaspRcvSetup = {
 			/* .aclkrctl  = */ 0x00000027,
 			/* .ahclkrctl = */ 0x00008027,
 		#else /* I2S MODE*/
-			/* .aclkrctl  = */ 0x000000Af,	/* Div (8), Internal Source, rising edge */
+			/* .aclkrctl  = */ 0x000000A7,	/* Div (8), Internal Source, rising edge */
 			/* .ahclkrctl = */ 0x00008013,	/* Div (20), Internal AUX_CLK Source */
 		#endif
 #else
@@ -225,7 +225,7 @@ Mcasp_HwSetupData mcaspXmtSetup = {
 			/* .ahclkxctl = */ 0x00008027,
 
 		#else /* I2S MODE*/
-			/* .aclkxctl  = */ 0x000000Af, /* Div (8), Internal Source, SYNC, Falling edge */
+			/* .aclkxctl  = */ 0x000000A7, /* Div (8), Internal Source, SYNC, Falling edge */
 			/* .ahclkxctl = */ 0x00008013, /* Div (20), Internal AUX_CLK Source */
 		#endif
 #else

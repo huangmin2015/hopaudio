@@ -205,7 +205,7 @@ void mcaspAppCallback(void* arg, MCASP_Packet *ioBuf)
 		if(ioBuf->addr != (void *)getGlobalAddr((uint32_t)rxbuf[rxFrameIndex])) {
 		   MCASP_log("Rx Buf Address mismatch\n");
 		}
-		//Log_print0(Diags_ENTRY, " MCASP_READ Callback...:");
+		//Log_print0(Diags_ENTRY, "RC");
 	/* post semaphore */
 	Semaphore_post(semR);
 	}
@@ -216,7 +216,7 @@ void mcaspAppCallback(void* arg, MCASP_Packet *ioBuf)
 			MCASP_log("Tx Buf Address mismatch\n");
 		}
 		TxFlag++;
-		//Log_print0(Diags_ENTRY, " MCASP_WRITE Callback...:");
+		//Log_print0(Diags_ENTRY, "WC");
 		/* post semaphore */
 		Semaphore_post(semT);
 		}
@@ -308,7 +308,6 @@ static Void createStreams()
 {
 	int status;
 
-
     int mode = IOM_INPUT;
 	char remName[10]="aic";
 #if !defined(MCASP_MASTER)
@@ -332,9 +331,7 @@ static Void createStreams()
 		MCASP_log("AIC Create Channel Failed\n");
 		BIOS_exit(0);
 	}
-
 #endif
-	
 #endif
 	
 	
@@ -381,16 +378,14 @@ static Void createStreams()
     In the below case, it is the AIC codec */
 
 #if defined(AIC_CODEC)
-
 	I2CCodecIfInit_for_MicArray(SOC_I2C_1_REGS,I2C_1_INSTANCE,2);
 	I2CCodecIfInit_for_MicArray(SOC_I2C_4_REGS,I2C_4_INSTANCE,2);
-   //while(1){
-	//wm8960_init(SOC_I2C_1_REGS,PW8960_I2C_ADDR);
+
 	PCM1864_init(SOC_I2C_1_REGS,PCM1864_I2C3_1_ADDR );
     PCM1864_init(SOC_I2C_1_REGS,PCM1864_I2C3_2_ADDR );
 	PCM1864_init(SOC_I2C_4_REGS,PCM1864_I2C3_1_ADDR );
 	PCM1864_init(SOC_I2C_4_REGS,PCM1864_I2C3_2_ADDR );
-//}
+
 	status = aic31MdCreateChan(
 		&hAicChannel,
 		hAicDev,
@@ -409,13 +404,9 @@ static Void createStreams()
 	{
 
 	}
-#else
-
-
 #endif
 
 #endif
-
 }
 
 /*
@@ -445,7 +436,8 @@ static Void prime()
     /* Allocate buffers for the SIO buffer exchanges                          */
     for(count = 0; count < (NUM_BUFS ); count ++)
     {
-        rxbuf[count] = Memory_calloc(iheap, rx_frame_size,BUFALIGN, &eb);
+        //rxbuf[count] = Memory_calloc(iheap, rx_frame_size,BUFALIGN, &eb);
+        rxbuf[count] = 0x9b000000+count*rx_frame_size;
         Log_print2(Diags_ENTRY, "-- rxbuf:%d  addr:%2x",  count ,rxbuf[count]);
         if(NULL == rxbuf[count])
         {
@@ -457,7 +449,8 @@ static Void prime()
     /* Allocate buffers for the SIO buffer exchanges                          */
     for(count = 0; count < (NUM_BUFS); count ++)
     {
-        txbuf[count] = Memory_calloc(iheap, tx_frame_size,BUFALIGN, &eb);
+        //txbuf[count] = Memory_calloc(iheap, tx_frame_size,BUFALIGN, &eb);
+        txbuf[count] = 0x9b000000+2*rx_frame_size+count*tx_frame_size;
         Log_print2(Diags_ENTRY, "-- rxbuf:%d  addr:%2x",  count ,txbuf[count]);
         if(NULL == txbuf[count])
         {
@@ -465,12 +458,6 @@ static Void prime()
             Log_print0(Diags_ENTRY, " MEM_calloc failed...:");
         }
     }
-
-#ifdef AUDIO_EQ_DEMO
-    audioEQ_allocate_bufs(iheap,rx_frame_size,BUFALIGN);
-#endif
-
-
     for(count = 0; count < NUM_BUFS; count ++)
     {
             /* Issue the first & second empty buffers to the input stream         */
@@ -494,7 +481,6 @@ static Void prime()
        {
 
 	    // memset((uint8_t *)txbuf[count], (0xA0+count), tx_frame_size);
-	     //memset((uint8_t *)rxbuf[count], (0x0f), rx_frame_size);
 	     memset((uint8_t *)txbuf[count], (0x0f), tx_frame_size);
    			/* TX frame processing */
    			txFrame[count].cmd = MCASP_WRITE;
@@ -553,21 +539,15 @@ Void Audio_echo_Task()
     uint32_t rx_frame_size = BUFLEN*RX_NUM_SERIALIZER*rx_bytes_per_sample;
     unsigned char cnt=0;
     unsigned int i;
-    Log_print0(Diags_ENTRY, " 20180216 enter audio task...:");
+    Log_print0(Diags_ENTRY, " 20180303 enter audio task...:");
 
 #ifdef MEASURE_TIME
 	profiling_init();
 #endif
 
-#if defined(AUDIO_EQ_DEMO)
-    MCASP_log("\n******** Audio EQ Demo  ********\n");
-#elif defined(DEVICE_LOOPBACK)
-    MCASP_log("\n******** Device Loopback demo ********\n");
-    MCASP_log("The test will automatically send %d frames and does a ramp check\n",NUM_TEST_FRAMES);
-#else
     MCASP_log("\n******** Audio Loopback demo ema********\n");
     MCASP_log("Send audio signals in to the EVM's audio-in port and hear the same audio in the audio-out port\n");
-#endif
+
 
     /* 1. EDMA Initializations */
     EDMA3_DRV_Result edmaResult = 0;
@@ -577,18 +557,14 @@ Void Audio_echo_Task()
 	
     hEdma = edma3init(EDMACC_NUM, &edmaResult);
 
-    if (edmaResult != EDMA3_DRV_SOK)
-        {
-            /* Report EDMA Error
-             */
-            MCASP_log("\nEDMA driver initialization unsuccessful\n");
-            Log_print0(Diags_ENTRY, " EDMA driver initialization not  unsuccessful...:");
-        }
-        else
-        {
-           MCASP_log("\nEDMA driver initialization successful.\n");
-           Log_print0(Diags_ENTRY, " EDMA driver initialization successful...:");
-        }
+    if (edmaResult != EDMA3_DRV_SOK){
+        /* Report EDMA Error*/
+        MCASP_log("\nEDMA driver initialization unsuccessful\n");
+        Log_print0(Diags_ENTRY, " EDMA driver initialization not  unsuccessful...:");
+    }else{
+        MCASP_log("\nEDMA driver initialization successful.\n");
+        Log_print0(Diags_ENTRY, " EDMA driver initialization successful...:");
+    }
 
 	/* 2. SEM Initializations */
     Semaphore_Params_init(&params);
@@ -602,14 +578,6 @@ Void Audio_echo_Task()
 
 	mcaspParams = Mcasp_PARAMS;
 
-
-#ifdef DEVICE_LOOPBACK
-/* Enable MCASP DLB mode */
-	mcaspParams.mcaspHwSetup.glb.dlbMode=(CSL_MCASP_DLBCTL_DLBEN_ENABLE |
-										 ( CSL_MCASP_DLBCTL_ORD_XMTEVEN << CSL_MCASP_DLBCTL_ORD_SHIFT) |
-										 ( CSL_MCASP_DLBCTL_MODE_XMTCLK << CSL_MCASP_DLBCTL_MODE_SHIFT) );
-
-#endif
 
 	status = mcaspBindDev(&hMcaspDev_MicArray, MCASP_MIC_ARRAY_NUM, &mcaspParams);
 	if((status != MCASP_COMPLETED) || (hMcaspDev_MicArray == NULL))
@@ -633,9 +601,7 @@ Void Audio_echo_Task()
 #endif
 
     /* Call createStream function to create I/O streams                       */
-  //  while(1);
     createStreams();
-    //while(1);
     MCASP_log("Initialization complete. priming about to begin \n");
     Log_print0(Diags_ENTRY, " Initialization complete. priming about to begin...2315 linux+l2sram:");
     /* Call prime function to do priming                                      */
@@ -644,24 +610,16 @@ Void Audio_echo_Task()
     MCASP_log("priming complete.\n");
     Log_print0(Diags_ENTRY, " priming complete...:");
 
-#if defined(DEVICE_LOOPBACK)
-    /* Configure the Device loopback test's paramters such as loopback mask */
-    config_deviceloopback(tx_frame_size,rx_frame_size);
-#endif
-
     /* Forever loop to continously receviec and transmit audio data           */
-    for (i32Count = 0; i32Count >= 0; i32Count++)
+    while(1)//for (i32Count = 0; i32Count >= 0; i32Count++)
     {
 
     	if(gblErrFlagXmt || gblErrFlagRcv)
     		break;
 
-#if defined(DEVICE_LOOPBACK)
-    	dlb_process_events();
-#endif
     	Semaphore_pend(semR, BIOS_WAIT_FOREVER);
     	Semaphore_pend(semT, BIOS_WAIT_FOREVER);
-    	//Log_print0(Diags_ENTRY, " can MCASP_READ and write  Callback...:");
+    	//Log_print0(Diags_ENTRY, " M_RW");
 
 #ifdef MEASURE_TIME
     profiling_end();  
@@ -669,10 +627,6 @@ Void Audio_echo_Task()
 /* For Device loopback test (ramp) we send a fininte number of frames. For other tests and 
    the default case, the number of frames is inifinite and the demo never exits out of 
    the for loop */
-#if defined(DEVICE_LOOPBACK)
-        if(total_frames_sent==NUM_TEST_FRAMES)
-        	break;
-#endif
 
     	/* Reclaim full buffer from the input stream                          */
     	gtxFrameIndexCount=txFrameIndex;
@@ -686,35 +640,15 @@ Void Audio_echo_Task()
 		   APPLICATION SPECIFIC PROCESSING could be done here. Below are the few audio demos and their
 		   application specific processing shown below.
 	    */
-#if defined(AUDIO_EQ_DEMO)
-        /* AUDIO_EQ CASE: The Audio EQ demo applies EQ parameters on the samples received from McASP before 
-		   sending it back to the Tx McASP 
-		*/
-		audioEQ_process_samples((void *)((uint8_t *)txbuf[gtxFrameIndexCount]),rxbuf[grxFrameIndexCount],rx_frame_size);
-#elif defined(DEVICE_LOOPBACK)
-        /* DEVICE LOOPBACK CASE: The Device loopback tests checks for Ramp continuity on the frame received 
-		 (the previous Tx frame sent and received via loopback)	and sends a continual ramp 
-		 on to the Tx McASP.
-		*/
-		deviceloopback_process_samples((void *)((uint8_t *)txbuf[gtxFrameIndexCount]),(void *)((uint8_t *)rxbuf[grxFrameIndexCount]),tx_frame_size,rx_frame_size);
-#else
         /* DEFAULT CASE: Copy the frame received and send it back to Tx buffer.
 		   This way the audio received by McASP from the remote device, is loopbacked and sent back
 		   to the device here.
 		*/
-		//MCASP_log ("r:%d\n", rx_frame_size);
-		//MCASP_log("fn: %d\n",total_frames_sent);
 		cnt++;
 		for(i=0;i<BUFLEN;i++){
-		   *(((uint32_t *)txbuf[gtxFrameIndexCount])+i) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*8+1));
+		   *(((uint32_t *)txbuf[gtxFrameIndexCount])+i) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*8+3));
 		}
-		//Log_print0(Diags_ENTRY, " rcv da...:");
-		   //for(i=0;i<512;i++)
-		 //     *(((uint32_t *)txbuf[gtxFrameIndexCount])+2*i) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*16+5));
-
-		//memcpy((void *)((uint8_t *)txbuf[gtxFrameIndexCount]),(void *)((uint8_t *)rxbuf[grxFrameIndexCount]),tx_frame_size);
-		//memset((void *)((uint8_t *)txbuf[gtxFrameIndexCount]),0x0f,tx_frame_size);
-#endif
+		//memset((void *)((uint8_t *)txbuf[gtxFrameIndexCount]),cnt,tx_frame_size);
 
         /******************************* Sample Processing End ***************************/
         

@@ -122,14 +122,11 @@ void McASP3_Enable1(void)  //modify by hum
 {
 
     //uint32_t regVal = 0U;
-         //0x4ae06100U+
         // Choose SYS_CLK2 (22.5792 MHZ) as source for ABE_PLL REF CLK   16·ÖÆµ
         HW_WR_FIELD32(CSL_DSP_CKGEN_PRM_REGS+CSL_CKGEN_PRM_CM_CLKSEL_ABE_PLL_SYS_REG, \
                 CSL_CKGEN_PRM_CM_CLKSEL_ABE_PLL_SYS_REG_CLKSEL, \
                 CSL_CKGEN_PRM_CM_CLKSEL_ABE_PLL_SYS_REG_CLKSEL_SEL_SYS_CLK2);
-       // HW_WR_FIELD32_RAW(0x4A0052C4,0x0000001f,0,4);  //clkout2 4 div
         /* Reprogram ABE DPLL for 451.584 MHz output on PER_ABE_X1_GFCLK line */
-
         // step 1: disable the PLL, if enabled (ex: via GEL)
         while(HW_RD_FIELD32(CSL_DSP_CKGEN_CM_CORE_AON_REGS+CSL_CKGEN_CM_CORE_AON_CM_CLKMODE_DPLL_ABE_REG, \
                 CSL_CKGEN_CM_CORE_AON_CM_CLKMODE_DPLL_ABE_REG_DPLL_EN) == CSL_CKGEN_CM_CORE_AON_CM_CLKMODE_DPLL_ABE_REG_DPLL_EN_DPLL_LOCK_MODE)

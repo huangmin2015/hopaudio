@@ -99,7 +99,7 @@
 									<listOptionValue builtIn="false" value="DMA_XBAR_AVAILABLE"/>
 									<listOptionValue builtIn="false" value="MCASP_MASTER"/>
 									<listOptionValue builtIn="false" value="BUILD_AM572X_DSP"/>
-									<listOptionValue builtIn="false" value="AIC_CODEC"/>
+									<listOptionValue builtIn="false" value="_AIC_CODEC"/>
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.C6000_8.1.compilerID.DIAG_SUPPRESS.1313522408" name="Suppress diagnostic &lt;id&gt; (--diag_suppress, -pds)" superClass="com.ti.ccstudio.buildDefinitions.C6000_8.1.compilerID.DIAG_SUPPRESS" valueType="stringList">
 									<listOptionValue builtIn="false" value="1111"/>
