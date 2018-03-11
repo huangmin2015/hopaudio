@@ -64,7 +64,7 @@ Int ipc_main()
     Error_Block     eb;
     Task_Params     taskParams;
 
-    Log_print0(Diags_ENTRY, "entry by hum --> main:");
+    Log_print0(Diags_ENTRY, "ipc entry by hum --> main:");
 
     /* must initialize the error block before using it */
     Error_init(&eb);

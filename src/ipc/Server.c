@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Texas Instruments Incorporated
+ * Copyright (c) 2017, Texas Instruments Incorporated
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,18 +51,22 @@
 /* package header files */
 #include <ti/ipc/MessageQ.h>
 #include <ti/ipc/MultiProc.h>
-
+#include <ti/ipc/SharedRegion.h>
+#include <ti/ipc/HeapMemMP.h>
+#include <ti/ipc/remoteproc/Resource.h>
+#include <ti/sysbios/hal/Cache.h>
+#include <xdc/runtime/IHeap.h>
+#include <xdc/runtime/Memory.h>
+#include <xdc/runtime/Error.h>
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Task.h>
-
+#include <ti/sysbios/knl/Semaphore.h>
 /* local header files */
-//BWC no longer have shared folder
-//#include "../shared/AppCommon.h"
 #include "AppCommon.h"
 
 /* module header file */
 #include "Server.h"
-
+#include "data.h"
 /* module structure */
 typedef struct {
     UInt16              hostProcId;         // host processor id
@@ -72,8 +76,9 @@ typedef struct {
 /* private data */
 Registry_Desc               Registry_CURDESC;
 static Server_Module        Module;
+extern _SharebufStr SharebufStr;
 
-
+#define DEBUG 1
 /*
  *  ======== Server_init ========
  */
@@ -84,10 +89,11 @@ Void Server_init(Void)
     /* register with xdc.runtime to get a diags mask */
     result = Registry_addModule(&Registry_CURDESC, MODULE_NAME);
     Assert_isTrue(result == Registry_SUCCESS, (Assert_Id)NULL);
-
+    //share_data_init();
     /* initialize module object state */
     Module.hostProcId = MultiProc_getId("HOST");
 }
+
 
 
 /*
@@ -119,9 +125,6 @@ leave:
     return (status);
 }
 
-
-
-
 /*
  *  ======== Server_exec ========
  */
@@ -131,6 +134,15 @@ Int Server_exec()
     Bool                running = TRUE;
     App_Msg *           msg;
     MessageQ_QueueId    queId;
+    UInt16  regionId1=1;
+    Uint32 *bigDataLocalPtr;
+    Int j;
+    UInt32 errorCount=0;
+    Int retVal;
+    bigDataLocalDesc_t bigDataLocalDesc;
+    SharedRegion_Entry srEntry;
+    UInt16 InitFlag=0;
+    void *sharedRegionAllocPtr=NULL;
 
     Log_print0(Diags_ENTRY | Diags_INFO, "--> Server_exec:");
 
@@ -143,20 +155,123 @@ Int Server_exec()
         if (status < 0) {
             goto leave;
         }
+        Log_print1(Diags_ENTRY | Diags_INFO, "Message received...%d", msg->id);
+        switch (msg->cmd) {
+        case App_CMD_SHARED_REGION_INIT:
+            /* Create Shared region with information from init message */
+            /* Configure srEntry */
+            if(InitFlag==0){
+                InitFlag=1;
+                Log_print1(Diags_ENTRY | Diags_INFO, "base...%x", (UInt32)msg->u.sharedRegionInitCfg.base);
+                status = Resource_physToVirt((UInt32)msg->u.sharedRegionInitCfg.base,
+                                         (UInt32 *)&sharedRegionAllocPtr);
+                Log_print1(Diags_ENTRY | Diags_INFO, "virt...%x", sharedRegionAllocPtr);
 
-        if (msg->cmd == App_CMD_SHUTDOWN) {
+                if(status != Resource_S_SUCCESS) {
+                //printf("Resource_physToVirt failed \n");
+                    Log_print0(Diags_ENTRY | Diags_INFO, "Resource_physToVirt failed...");
+                    goto leave;
+                }
+                srEntry.base = sharedRegionAllocPtr;
+                srEntry.len = msg->u.sharedRegionInitCfg.size;
+                srEntry.ownerProcId = MultiProc_self();
+                srEntry.isValid = TRUE;
+                /* Make sure CacheEnable is TRUE if using cached memory */
+                srEntry.cacheEnable = TRUE;
+                srEntry.createHeap = FALSE;
+                srEntry.cacheLineSize = 128;
+                srEntry.name = "SR1";
+                Log_print2(Diags_ENTRY | Diags_INFO, "len:%d,ownerProcId:%d ",srEntry.len, srEntry.ownerProcId );
+                status = SharedRegion_setEntry (regionId1, &srEntry);
+                Log_print0(Diags_ENTRY | Diags_INFO, "Shared region entry configured...");
+            }else{
+                Log_print0(Diags_ENTRY | Diags_INFO, "Shared region already created!!");
+            }
+        break;
+
+        case App_CMD_START:
+            Log_print0(Diags_ENTRY | Diags_INFO, "start get data...");
+        case App_CMD_STOP:
+            Log_print0(Diags_ENTRY | Diags_INFO, "stop get data...");
+        case App_CMD_BIGDATA:
+#ifdef DEBUG
+            Log_print1(Diags_ENTRY | Diags_INFO, "msg->cmd=App_CMD_BIGDATA,msg->ptr=0x%x",
+                (IArg)msg->u.bigDataSharedDesc.sharedPtr);
+#endif
+#if 1
+            /* Translate to local descriptor */
+            retVal = bigDataXlatetoLocalAndSync(regionId1,
+                &msg->u.bigDataSharedDesc, &bigDataLocalDesc);
+            if (retVal) {
+                Log_print0(Diags_INFO, " bigDataXlatetoLocalAndSync errer:....: ");
+                status = -1;
+                goto leave;
+            }
+            bigDataLocalPtr = (Uint32 *)bigDataLocalDesc.localPtr;
+
+            // print message from buffer
+            Log_print1(Diags_INFO, " Received message %d", msg->id);
+            Log_print1(Diags_INFO, " Local Pointer 0x%x", (UInt32)bigDataLocalPtr);
+            Log_print1(Diags_INFO, " DataSize:%d:",(UInt32)(bigDataLocalDesc.size));
+            Log_print0(Diags_INFO, " First 8 bytes: ");
+            for ( j = 0; j < 8 && j < bigDataLocalDesc.size/sizeof(uint32_t); j+=4)
+                Log_print4(Diags_INFO, "0x%x, 0x%x, 0x%x, 0x%x",
+                    bigDataLocalPtr[j], bigDataLocalPtr[j+1], bigDataLocalPtr[j+2], bigDataLocalPtr[j+3]);
+
+            //Semaphore_pend(SharebufStr.SemShareDate, BIOS_WAIT_FOREVER);
+
+
+            for ( j = 0; j < 8 && j < bigDataLocalDesc.size/sizeof(uint32_t); j+=4){
+
+                bigDataLocalPtr[j]=0+j;
+                bigDataLocalPtr[j+1]=1+j;
+                bigDataLocalPtr[j+2]=2+j;
+                bigDataLocalPtr[j+3]=3+j;
+            }
+            Log_print0(Diags_INFO, " write audio data to cmem....: ");
+            //for ( j = 0;j < bigDataLocalDesc.size/sizeof(uint32_t); j+=4)
+              //  bigDataLocalPtr[j]=j;
+            //Fill new data
+          /*  for ( j=0; j < bigDataLocalDesc.size/sizeof(uint32_t); j++)
+                //bigDataLocalPtr[j] = msg->id + 10 +j;
+                bigDataLocalPtr[j] = bigDataLocalPtr[j]+1;
+*/
+            //Translate to Shared Descriptor and Sync
+            retVal = bigDataXlatetoGlobalAndSync(regionId1,
+                &bigDataLocalDesc, &msg->u.bigDataSharedDesc);
+            if (retVal) {
+                Log_print0(Diags_INFO, " bigDataXlatetoGlobalAndSync errer:....: ");
+                status = -1;
+                goto leave;
+            }
+#endif
+        break;
+
+        case App_CMD_SHUTDOWN:
             running = FALSE;
+        break;
+
+        default:
+        break;
         }
 
         /* process the message */
-        Log_print1(Diags_INFO, "Server_exec: processed cmd=0x%x", msg->cmd);
+        Log_print2(Diags_INFO, "Server_exec: processed id %d, cmd=0x%x", msg->id, msg->cmd);
 
         /* send message back */
-        queId = MessageQ_getReplyQueue(msg); /* type-cast not needed */
+        queId = MessageQ_getReplyQueue(msg);
         MessageQ_put(queId, (MessageQ_Msg)msg);
     } /* while (running) */
 
 leave:
+    /* Print error count if non-zero */
+    if (errorCount) {
+        Log_print1(Diags_INFO, "Server_exec: Error Count %d", errorCount);
+        status = -1;
+    }
+    else
+        Log_print0(Diags_INFO, "Server_exec: Data check clean");
+
     Log_print1(Diags_EXIT, "<-- Server_exec: %d", (IArg)status);
     return(status);
 }

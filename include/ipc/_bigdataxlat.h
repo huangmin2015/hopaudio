@@ -29,57 +29,10 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-/*
- *  ======== AppCommon.h ========
- *
- */
-
-#ifndef AppCommon__include
-#define AppCommon__include
-#if defined (__cplusplus)
-extern "C" {
-#endif
-#include "bigdataxlat.h"
-
-/*
- *  ======== Application Configuration ========
- */
-
-/* notify commands 00 - FF */
-#define App_CMD_MASK                   0xFF000000
-#define App_CMD_NOP                    0x00000000
-#define App_CMD_SHARED_REGION_INIT     0x00000001
-#define App_CMD_BIGDATA                0x00000002
-#define App_CMD_START                  0x00000003
-#define App_CMD_STOP                   0x00000004
-#define App_CMD_SHUTDOWN               0x02000000
-
-typedef struct {
-    UInt64              base;
-    UInt64              size;
-} SharedRegionInitCfg;
-
-typedef struct {
-    MessageQ_MsgHeader  reserved;
-    UInt32              cmd;
-    Int32               id;
-    UInt16              regionId;
-    union {
-        SharedRegionInitCfg sharedRegionInitCfg;
-        bigDataSharedDesc_t bigDataSharedDesc;
-    } u;
-} App_Msg;
-
-#define App_MsgHeapId           0
-#define App_HostMsgQueName      "HOST:MsgQ:01"
-#define App_SlaveMsgQueName     "%s:MsgQ:01"  /* %s is each slave's Proc Name */
-
-#define BIGDATA_BUF_SIZE 8388608
-
-#define BIGDATA_BUF_ALIGN 1
-
-#if defined (__cplusplus)
-}
-#endif /* defined (__cplusplus) */
-#endif /* AppCommon__include */
+#include <ti/ipc/Std.h>
+//#include "SharedRegion.h"
+#include <ti/ipc/SharedRegion.h>
+#include <xdc/runtime/Memory.h>
+#include <bigdataxlat.h>
+//#include "Cache.h"
+#include <ti/sysbios/hal/Cache.h>

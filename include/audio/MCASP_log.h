@@ -66,7 +66,7 @@ extern void ConsoleUtilsInit(void);
 //#define IO_CONSOLE
 
 #ifndef IO_CONSOLE
-#define MCASP_log               // UART_printf
+#define MCASP_log                //UART_printf
 #else
 #define MCASP_log                printf
 #endif

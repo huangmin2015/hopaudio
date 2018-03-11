@@ -9,6 +9,6 @@
 	<rts value="libc.a"/>
 	<createSlaveProjects value=""/>
 	<filesToOpen value=""/>
-	<origin value="D:/src/ccsWork/ccs_Audio_Captrue_with_ipc"/>
+	<origin value="G:/linux source/ccs_Audio_Captrue_with_ipc"/>
 	<isTargetManual value="false"/>
 </projectOptions>

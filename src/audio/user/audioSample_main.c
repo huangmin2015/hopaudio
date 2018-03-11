@@ -79,7 +79,8 @@
 
 
 /* Handle to the EDMA driver instance                                         */
-EDMA3_DRV_Handle hEdma;
+
+extern EDMA3_DRV_Handle hEdma;
 
 extern void configureAudio(void);
 extern void McaspDevice_init(void);

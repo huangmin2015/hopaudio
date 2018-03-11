@@ -234,7 +234,7 @@ int main(void) {
 	Clock_Params clockParams;
 	Error_Block eb;
 	int callIpcStartup = 1;
-	Log_print0(Diags_ENTRY, " 20180215 main inti by hum...:");
+	Log_print0(Diags_ENTRY, " 20180312 main init by hum debug ipc cmem ...:");
 	/* Call board init functions */
 	//Board_initGPIO();
 #if defined(IDK_AM572X) || defined(IDK_AM571X)
@@ -250,10 +250,12 @@ int main(void) {
 		BIOS_exit(0);
 	}
 	Log_print0(Diags_ENTRY, " Task_create Audio_echo_Task...:");
-#endif
+
 	//BWC, call the ipc main function
 	audio_main();
-#if 1  //close ipc
+#endif
+	//share_data_init();
+#if 1//close ipc
 	ipc_main();
 
 	if (callIpcStartup) {

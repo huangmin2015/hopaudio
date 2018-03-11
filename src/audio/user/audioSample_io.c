@@ -73,6 +73,7 @@
 #include "MCASP_log.h"
 #include "stdio.h"
 #include "string.h"
+#include "data.h"
 
 #include <ti/csl/cslr_mcasp.h>
 #ifdef MEASURE_TIME
@@ -94,8 +95,8 @@
 /*                          IMPORTED VARIABLES                                */
 /* ========================================================================== */
 
-
-extern EDMA3_DRV_Handle hEdma;
+extern  Semaphore_Handle SemShareDate;
+EDMA3_DRV_Handle hEdma;
 extern HeapMem_Handle myHeap;
 /* ========================================================================== */
 /*                          MACRO DEFINITIONS                                 */
@@ -146,6 +147,7 @@ int rxFrameIndex=(NUM_BUFS-1), txFrameIndex=(NUM_BUFS-1);
 volatile int RxFlag=0,TxFlag=0;
 Semaphore_Handle semR,semT;
 Semaphore_Params params;
+extern Semaphore_Handle SemShareDate;
 
 Error_Block eb;
 /**************************************************************************************/
@@ -537,7 +539,8 @@ Void Audio_echo_Task()
      * BUFLEN contains the samples per serializer (inclusive of its timeslots) */
     uint32_t tx_frame_size = BUFLEN*TX_NUM_SERIALIZER*tx_bytes_per_sample;
     uint32_t rx_frame_size = BUFLEN*RX_NUM_SERIALIZER*rx_bytes_per_sample;
-    unsigned char cnt=0;
+    unsigned int cnt=0;
+    unsigned int cnnt1=0;
     unsigned int i;
     Log_print0(Diags_ENTRY, " 20180303 enter audio task...:");
 
@@ -645,9 +648,17 @@ Void Audio_echo_Task()
 		   to the device here.
 		*/
 		cnt++;
-		for(i=0;i<BUFLEN;i++){
-		   *(((uint32_t *)txbuf[gtxFrameIndexCount])+i) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*8+3));
+		if(cnt>700){
+		    cnt=0;
+		    cnnt1++;
+		    Log_print1(Diags_ENTRY, " rcv: %d ...:",cnnt1);
+
 		}
+
+		for(i=0;i<BUFLEN;i++){
+		   *(((uint32_t *)txbuf[gtxFrameIndexCount])+i) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*8+2));
+		}
+		//Write_buffer((uint8_t *)txbuf[gtxFrameIndexCount],BUFLEN*4);
 		//memset((void *)((uint8_t *)txbuf[gtxFrameIndexCount]),cnt,tx_frame_size);
 
         /******************************* Sample Processing End ***************************/

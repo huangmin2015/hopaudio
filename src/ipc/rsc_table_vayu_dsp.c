@@ -81,11 +81,13 @@
 #define DSP_MEM_HEAP            0x95600000
 
 #define DSP_MEM_IPC_DATA        0x9F000000
-#define DSP_MEM_IPC_VRING       0xA0000000
-#define DSP_MEM_RPMSG_VRING0    0xA0000000
-#define DSP_MEM_RPMSG_VRING1    0xA0004000
-#define DSP_MEM_VRING_BUFS0     0xA0040000
-#define DSP_MEM_VRING_BUFS1     0xA0080000
+#define DSP_MEM_IPC_VRING       0x99000000
+#define DSP_MEM_RPMSG_VRING0    0x99000000
+#define DSP_MEM_RPMSG_VRING1    0x99004000
+#define DSP_MEM_VRING_BUFS0     0x99040000
+#define DSP_MEM_VRING_BUFS1     0x99080000
+
+#define DSP_MEM_TEXT            0x95000000
 
 #define DSP_PERIPHERAL_EDMA             0x43300000
 #define L3_PERIPHERAL_EDMA              0x43300000
@@ -105,6 +107,11 @@
 #define DSP_MEM_HEAP_SIZE       (SZ_1M * 3)
 #define DSP_MEM_IOBUFS_SIZE     (SZ_1M * 90)
 
+
+/* NOTE: Make sure this matches what is configured in the linux device tree */
+#define DSP_CMEM_IOBUFS 0xA0000000
+#define PHYS_CMEM_IOBUFS 0xA0000000
+#define DSP_CMEM_IOBUFS_SIZE (SZ_1M * 192)
 /*
  * Assign fixed RAM addresses to facilitate a fixed MMU table.
  */
@@ -353,8 +360,8 @@ struct my_resource_table ti_ipc_remoteproc_ResourceTable = {
 
     {
         TYPE_DEVMEM,
-        DSP_MCASP1_DATA, L3_MCASP1_DATA,
-        SZ_4M, 0, 0, "DSP_MCASP1_DATA",
+        DSP_CMEM_IOBUFS, PHYS_CMEM_IOBUFS,
+        DSP_CMEM_IOBUFS_SIZE, 0, 0, "DSP_CMEM_IOBUFS",
     },
 
     {
