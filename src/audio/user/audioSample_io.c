@@ -110,6 +110,11 @@ extern HeapMem_Handle myHeap;
 #define BUFLEN                  (128) /* number of samples per serializer in the frame  */
 #define BUFALIGN                128 /* alignment of buffer for use of L2 cache */
 
+//#define RECORD_16_TRACK 1
+#define RECORD_NUMS   1
+#define RECORD_BUF_LEN  (RECORD_NUMS*BUFLEN*4/2)
+
+
 /* This is the number of buffers used by the application to be issued and reclaimed 
    This number can be higher than 2 (Ping pong) also. The McASP driver puts them in 
    a queue internally and process them in order and give back to the application */
@@ -539,9 +544,11 @@ Void Audio_echo_Task()
      * BUFLEN contains the samples per serializer (inclusive of its timeslots) */
     uint32_t tx_frame_size = BUFLEN*TX_NUM_SERIALIZER*tx_bytes_per_sample;
     uint32_t rx_frame_size = BUFLEN*RX_NUM_SERIALIZER*rx_bytes_per_sample;
-    unsigned int cnt=0;
+    unsigned char cnt=0;
     unsigned int cnnt1=0;
-    unsigned int i;
+    unsigned int i,j;
+   // uint32_t  datemp[RECORD_BUF_LEN];
+    uint32_t  datemp[BUFLEN/2];
     Log_print0(Diags_ENTRY, " 20180303 enter audio task...:");
 
 #ifdef MEASURE_TIME
@@ -648,18 +655,30 @@ Void Audio_echo_Task()
 		   to the device here.
 		*/
 		cnt++;
-		if(cnt>700){
-		    cnt=0;
-		    cnnt1++;
-		    Log_print1(Diags_ENTRY, " rcv: %d ...:",cnnt1);
-
-		}
-
+		j=0;
+#if 1
 		for(i=0;i<BUFLEN;i++){
 		   *(((uint32_t *)txbuf[gtxFrameIndexCount])+i) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*8+2));
+		   if(i%2==0){
+		       datemp[j]=(*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*8+2));
+		       j++;
+		   }
 		}
-		//Write_buffer((uint8_t *)txbuf[gtxFrameIndexCount],BUFLEN*4);
-		//memset((void *)((uint8_t *)txbuf[gtxFrameIndexCount]),cnt,tx_frame_size);
+
+        Write_buffer((uint8_t *)datemp,BUFLEN*2);
+#else
+	    //support 16s track record;
+		for(i=0;i<BUFLEN/2;i++){
+		      *(((uint32_t *)txbuf[gtxFrameIndexCount])+2*i) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*16+2));
+		      *(((uint32_t *)txbuf[gtxFrameIndexCount])+2*i+1) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*16+8+2));
+		      for(j=0;j<16;m++){
+		          datemp[i*16+j]=(*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*16+j));
+		      }
+		}
+        Write_buffer((uint8_t *)datemp,BUFLEN*32);
+#endif
+
+		//memset((void *)((uint8_t *)txbuf[gtxFrameIndexCount]),0x55,tx_frame_size);
 
         /******************************* Sample Processing End ***************************/
         

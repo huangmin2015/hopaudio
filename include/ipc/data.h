@@ -9,17 +9,18 @@
 #define SHARE_BUFFER_COUNT     2
 
 typedef struct {
-    unsigned char  * databuf;
-    unsigned int Writeoffset;
+    unsigned char  *ptr;
+    unsigned int WIndex;
     Bool ReadEnable;
 }_databuf;
 
 typedef struct {
     _databuf buf[SHARE_BUFFER_COUNT];
-    unsigned char ReadIndex;     //
-    unsigned char WriteIndex;
+    unsigned char RIndex;     //
+    unsigned char WIndex;
     Semaphore_Handle SemShareDate;
     unsigned char Tflag;       //flag to write data to buf;
+    unsigned int cnt;
 }_SharebufStr;
 
 

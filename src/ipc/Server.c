@@ -78,7 +78,7 @@ Registry_Desc               Registry_CURDESC;
 static Server_Module        Module;
 extern _SharebufStr SharebufStr;
 
-#define DEBUG 1
+//#define DEBUG 1
 /*
  *  ======== Server_init ========
  */
@@ -89,7 +89,7 @@ Void Server_init(Void)
     /* register with xdc.runtime to get a diags mask */
     result = Registry_addModule(&Registry_CURDESC, MODULE_NAME);
     Assert_isTrue(result == Registry_SUCCESS, (Assert_Id)NULL);
-    //share_data_init();
+    share_data_init();
     /* initialize module object state */
     Module.hostProcId = MultiProc_getId("HOST");
 }
@@ -142,11 +142,13 @@ Int Server_exec()
     bigDataLocalDesc_t bigDataLocalDesc;
     SharedRegion_Entry srEntry;
     UInt16 InitFlag=0;
+    Int cnt;
     void *sharedRegionAllocPtr=NULL;
 
     Log_print0(Diags_ENTRY | Diags_INFO, "--> Server_exec:");
-
+    cnt=0;
     while (running) {
+
 
         /* wait for inbound message */
         status = MessageQ_get(Module.slaveQue, (MessageQ_Msg *)&msg,
@@ -155,7 +157,7 @@ Int Server_exec()
         if (status < 0) {
             goto leave;
         }
-        Log_print1(Diags_ENTRY | Diags_INFO, "Message received...%d", msg->id);
+      //  Log_print1(Diags_ENTRY | Diags_INFO, "Message received...%d", msg->id);
         switch (msg->cmd) {
         case App_CMD_SHARED_REGION_INIT:
             /* Create Shared region with information from init message */
@@ -177,7 +179,7 @@ Int Server_exec()
                 srEntry.ownerProcId = MultiProc_self();
                 srEntry.isValid = TRUE;
                 /* Make sure CacheEnable is TRUE if using cached memory */
-                srEntry.cacheEnable = TRUE;
+                srEntry.cacheEnable = FALSE;
                 srEntry.createHeap = FALSE;
                 srEntry.cacheLineSize = 128;
                 srEntry.name = "SR1";
@@ -190,13 +192,18 @@ Int Server_exec()
         break;
 
         case App_CMD_START:
-            Log_print0(Diags_ENTRY | Diags_INFO, "start get data...");
+            Log_print0(Diags_ENTRY | Diags_INFO, ">>>>>>cmd: start get data...");
+            Start_record();
+            break;
         case App_CMD_STOP:
-            Log_print0(Diags_ENTRY | Diags_INFO, "stop get data...");
+            Log_print0(Diags_ENTRY | Diags_INFO, "<<<<<<cmd: stop get data...");
+            break;
         case App_CMD_BIGDATA:
-#ifdef DEBUG
+#ifdef  DEBUG
+            Log_print0(Diags_ENTRY | Diags_INFO, "====== BIGDATA START ======= ");
             Log_print1(Diags_ENTRY | Diags_INFO, "msg->cmd=App_CMD_BIGDATA,msg->ptr=0x%x",
                 (IArg)msg->u.bigDataSharedDesc.sharedPtr);
+            Log_print1(Diags_ENTRY | Diags_INFO, "sr id=%d",regionId1);
 #endif
 #if 1
             /* Translate to local descriptor */
@@ -208,7 +215,7 @@ Int Server_exec()
                 goto leave;
             }
             bigDataLocalPtr = (Uint32 *)bigDataLocalDesc.localPtr;
-
+#ifdef  DEBUG
             // print message from buffer
             Log_print1(Diags_INFO, " Received message %d", msg->id);
             Log_print1(Diags_INFO, " Local Pointer 0x%x", (UInt32)bigDataLocalPtr);
@@ -217,26 +224,20 @@ Int Server_exec()
             for ( j = 0; j < 8 && j < bigDataLocalDesc.size/sizeof(uint32_t); j+=4)
                 Log_print4(Diags_INFO, "0x%x, 0x%x, 0x%x, 0x%x",
                     bigDataLocalPtr[j], bigDataLocalPtr[j+1], bigDataLocalPtr[j+2], bigDataLocalPtr[j+3]);
+#endif
 
-            //Semaphore_pend(SharebufStr.SemShareDate, BIOS_WAIT_FOREVER);
+                Semaphore_pend(SharebufStr.SemShareDate, BIOS_WAIT_FOREVER);
+                while(1){
+                    if(Read_buffer((unsigned char  *)bigDataLocalPtr,4096)>0)
+                        break;
+                    Task_sleep(5);
+                }
+                Log_print1(Diags_INFO, " FB:%2x", *((unsigned char  *)bigDataLocalPtr));
+            cnt++;
 
-
-            for ( j = 0; j < 8 && j < bigDataLocalDesc.size/sizeof(uint32_t); j+=4){
-
-                bigDataLocalPtr[j]=0+j;
-                bigDataLocalPtr[j+1]=1+j;
-                bigDataLocalPtr[j+2]=2+j;
-                bigDataLocalPtr[j+3]=3+j;
-            }
-            Log_print0(Diags_INFO, " write audio data to cmem....: ");
-            //for ( j = 0;j < bigDataLocalDesc.size/sizeof(uint32_t); j+=4)
-              //  bigDataLocalPtr[j]=j;
-            //Fill new data
-          /*  for ( j=0; j < bigDataLocalDesc.size/sizeof(uint32_t); j++)
-                //bigDataLocalPtr[j] = msg->id + 10 +j;
-                bigDataLocalPtr[j] = bigDataLocalPtr[j]+1;
-*/
+           // Log_print0(Diags_INFO, " write audio data to cmem....: ");
             //Translate to Shared Descriptor and Sync
+
             retVal = bigDataXlatetoGlobalAndSync(regionId1,
                 &bigDataLocalDesc, &msg->u.bigDataSharedDesc);
             if (retVal) {
@@ -244,6 +245,9 @@ Int Server_exec()
                 status = -1;
                 goto leave;
             }
+#ifdef DEBUG
+           Log_print0(Diags_ENTRY | Diags_INFO, "====== BIGDATA END ======= ");
+#endif
 #endif
         break;
 
@@ -256,7 +260,7 @@ Int Server_exec()
         }
 
         /* process the message */
-        Log_print2(Diags_INFO, "Server_exec: processed id %d, cmd=0x%x", msg->id, msg->cmd);
+       // Log_print2(Diags_INFO, "Server_exec: processed id %d, cmd=0x%x", msg->id, msg->cmd);
 
         /* send message back */
         queId = MessageQ_getReplyQueue(msg);
