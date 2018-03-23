@@ -40,7 +40,7 @@ Int bigDataXlatetoGlobalAndSync(UInt16  regionId,
 
     /* Cache write back data buffer */
     if (SharedRegion_isCacheEnabled(regionId)) {
-        //Cache_wb(localDesc->localPtr, localDesc->size, Cache_Type_ALL, TRUE);
+       // Cache_wb(localDesc->localPtr, localDesc->size, Cache_Type_ALL, TRUE);
     }
 
     /* Translate Address to Shared address */
@@ -62,8 +62,8 @@ Int bigDataXlatetoLocalAndSync(UInt16  regionId,
 
     /* If shared region is configured for cache enabled do cache operation */
     if (SharedRegion_isCacheEnabled(regionId)) {
-        //Cache_inv(localDesc->localPtr,
-        //    localDesc->size, Cache_Type_ALL, TRUE);
+        Cache_inv(localDesc->localPtr,
+            localDesc->size, Cache_Type_ALL, TRUE);
     }
 
     return(0);

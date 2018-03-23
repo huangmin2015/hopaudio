@@ -78,7 +78,7 @@ Registry_Desc               Registry_CURDESC;
 static Server_Module        Module;
 extern _SharebufStr SharebufStr;
 
-#define DEBUG 1
+//#define DEBUG 1
 /*
  *  ======== Server_init ========
  */
@@ -148,6 +148,7 @@ Int Server_exec()
 
     while (running) {
 
+
         /* wait for inbound message */
         status = MessageQ_get(Module.slaveQue, (MessageQ_Msg *)&msg,
             MessageQ_FOREVER);
@@ -190,13 +191,17 @@ Int Server_exec()
         break;
 
         case App_CMD_START:
-            Log_print0(Diags_ENTRY | Diags_INFO, "start get data...");
+            Log_print0(Diags_ENTRY | Diags_INFO, ">>>>>>start get data...");
+            break;
         case App_CMD_STOP:
-            Log_print0(Diags_ENTRY | Diags_INFO, "stop get data...");
+            Log_print0(Diags_ENTRY | Diags_INFO, "<<<<<<stop get data...");
+            break;
         case App_CMD_BIGDATA:
-#ifdef DEBUG
+#ifdef  DEBUG
+            Log_print0(Diags_ENTRY | Diags_INFO, "====== BIGDATA START ======= ");
             Log_print1(Diags_ENTRY | Diags_INFO, "msg->cmd=App_CMD_BIGDATA,msg->ptr=0x%x",
                 (IArg)msg->u.bigDataSharedDesc.sharedPtr);
+            Log_print1(Diags_ENTRY | Diags_INFO, "sr id=%d",regionId1);
 #endif
 #if 1
             /* Translate to local descriptor */
@@ -208,7 +213,7 @@ Int Server_exec()
                 goto leave;
             }
             bigDataLocalPtr = (Uint32 *)bigDataLocalDesc.localPtr;
-
+#ifdef  DEBUG
             // print message from buffer
             Log_print1(Diags_INFO, " Received message %d", msg->id);
             Log_print1(Diags_INFO, " Local Pointer 0x%x", (UInt32)bigDataLocalPtr);
@@ -217,26 +222,21 @@ Int Server_exec()
             for ( j = 0; j < 8 && j < bigDataLocalDesc.size/sizeof(uint32_t); j+=4)
                 Log_print4(Diags_INFO, "0x%x, 0x%x, 0x%x, 0x%x",
                     bigDataLocalPtr[j], bigDataLocalPtr[j+1], bigDataLocalPtr[j+2], bigDataLocalPtr[j+3]);
-
+#endif
             //Semaphore_pend(SharebufStr.SemShareDate, BIOS_WAIT_FOREVER);
 
 
             for ( j = 0; j < 8 && j < bigDataLocalDesc.size/sizeof(uint32_t); j+=4){
 
-                bigDataLocalPtr[j]=0+j;
-                bigDataLocalPtr[j+1]=1+j;
-                bigDataLocalPtr[j+2]=2+j;
-                bigDataLocalPtr[j+3]=3+j;
+                bigDataLocalPtr[j]+=1;
+                bigDataLocalPtr[j+1]+=2;
+                bigDataLocalPtr[j+2]+=3;
+                bigDataLocalPtr[j+3]+=4;
             }
-            Log_print0(Diags_INFO, " write audio data to cmem....: ");
-            //for ( j = 0;j < bigDataLocalDesc.size/sizeof(uint32_t); j+=4)
-              //  bigDataLocalPtr[j]=j;
-            //Fill new data
-          /*  for ( j=0; j < bigDataLocalDesc.size/sizeof(uint32_t); j++)
-                //bigDataLocalPtr[j] = msg->id + 10 +j;
-                bigDataLocalPtr[j] = bigDataLocalPtr[j]+1;
-*/
+           // Log_print0(Diags_INFO, " write audio data to cmem....: ");
+
             //Translate to Shared Descriptor and Sync
+
             retVal = bigDataXlatetoGlobalAndSync(regionId1,
                 &bigDataLocalDesc, &msg->u.bigDataSharedDesc);
             if (retVal) {
@@ -244,6 +244,13 @@ Int Server_exec()
                 status = -1;
                 goto leave;
             }
+           // while(1){
+           //     Task_sleep(1000);
+           //     Log_print0(Diags_INFO, " 11task wait ... ");
+           // }
+#ifdef DEBUG
+           Log_print0(Diags_ENTRY | Diags_INFO, "====== BIGDATA END ======= ");
+#endif
 #endif
         break;
 

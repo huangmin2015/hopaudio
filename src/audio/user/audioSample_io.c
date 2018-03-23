@@ -648,7 +648,7 @@ Void Audio_echo_Task()
 		   to the device here.
 		*/
 		cnt++;
-		if(cnt>700){
+		if(cnt>2000){
 		    cnt=0;
 		    cnnt1++;
 		    Log_print1(Diags_ENTRY, " rcv: %d ...:",cnnt1);
