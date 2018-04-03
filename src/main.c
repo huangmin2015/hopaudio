@@ -234,7 +234,7 @@ int main(void) {
 	Clock_Params clockParams;
 	Error_Block eb;
 	int callIpcStartup = 1;
-	Log_print0(Diags_ENTRY, " 20180312 main init by hum debug ipc cmem ...:");
+	Log_print0(Diags_ENTRY, " 20180329 main init by hum debug ipc cmem ...:");
 	/* Call board init functions */
 	//Board_initGPIO();
 #if defined(IDK_AM572X) || defined(IDK_AM571X)

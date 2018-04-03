@@ -307,7 +307,7 @@ Mcasp_ChanParams  mcasp_chanparam[3]=
         Mcasp_WordBitsSelect_LSB
     },
     {
-            TX_NUM_SERIALIZER,        /* number of serialisers       */
+            MIC_TX_NUM_SERIALIZER,        /* number of serialisers       */
             {Mcasp_SerializerNum_8},
             &mcaspXmtSetup,
             TRUE,
@@ -319,14 +319,14 @@ Mcasp_ChanParams  mcasp_chanparam[3]=
             (Mcasp_GblCallback)&GblErrXmt,
     #if defined (DSP_MODE)
             1,
-    #if TX_NUM_SERIALIZER == 1u
+    #if MIC_TX_NUM_SERIALIZER == 1u
             Mcasp_BufferFormat_1SER_1SLOT,
     #else
             Mcasp_BufferFormat_MULTISER_1SLOT_SER_INTERLEAVED,
     #endif
     #else      /* I2S MODE*/
             2, /* number of TDM channels      */
-    #if TX_NUM_SERIALIZER == 1u
+    #if MIC_TX_NUM_SERIALIZER == 1u
             Mcasp_BufferFormat_1SER_MULTISLOT_INTERLEAVED,
     #else
             Mcasp_BufferFormat_MULTISER_MULTISLOT_SEMI_INTERLEAVED_1,

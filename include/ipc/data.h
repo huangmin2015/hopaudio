@@ -5,7 +5,14 @@
 #include <xdc/runtime/Log.h>
 
 #include <stdio.h>
+#define RECORD_16_CHANEL 1
 #define SHARE_DATA_LEN_MAX     4096
+#ifndef RECORD_16_CHANEL
+#define RECORD_CHANEL_NUM      1
+#else
+#define RECORD_CHANEL_NUM      16
+#endif
+
 #define SHARE_BUFFER_COUNT     2
 
 typedef struct {

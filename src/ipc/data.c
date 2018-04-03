@@ -46,8 +46,8 @@ int alloc_buffer(void)
     Error_init(&eb1);
 
     for(count = 0; count < (SHARE_BUFFER_COUNT); count ++){
-        SharebufStr.buf[count].ptr = Memory_calloc(iheap, SHARE_DATA_LEN_MAX,128, &eb1);
-        //Log_print2(Diags_ENTRY, "-- ptr:%d  addr:%2x",  count ,  SharebufStr.buf[count].ptr);
+        SharebufStr.buf[count].ptr = Memory_calloc(iheap, SHARE_DATA_LEN_MAX*RECORD_CHANEL_NUM,128, &eb1);
+        Log_print2(Diags_ENTRY, "-- ptr:%d  addr:%2x",  count ,  SharebufStr.buf[count].ptr);
         if(NULL == SharebufStr.buf[count].ptr){
             Log_print0(Diags_ENTRY, " MEM_calloc failed...:");
         }
@@ -58,7 +58,10 @@ int alloc_buffer(void)
 void Write_buffer(unsigned char  * p,unsigned int len)
 {
     unsigned char *pIndex;
+    int i;
     if( SharebufStr.Tflag==1){
+
+#ifndef RECORD_16_CHANEL
         pIndex=SharebufStr.buf[SharebufStr.WIndex].ptr+SharebufStr.buf[SharebufStr.WIndex].WIndex;
         memcpy(pIndex,p,len);
         SharebufStr.buf[SharebufStr.WIndex].WIndex += len;
@@ -71,6 +74,23 @@ void Write_buffer(unsigned char  * p,unsigned int len)
             // post sem
             Semaphore_post(SharebufStr.SemShareDate);
         }
+#else
+        for(i=0;i<RECORD_CHANEL_NUM;i++){
+            pIndex=SharebufStr.buf[SharebufStr.WIndex].ptr+i*SHARE_DATA_LEN_MAX+SharebufStr.buf[SharebufStr.WIndex].WIndex;
+            memcpy(pIndex,p+i*256,len);
+        }
+        SharebufStr.buf[SharebufStr.WIndex].WIndex += len;
+        if(SharebufStr.buf[SharebufStr.WIndex].WIndex>=SHARE_DATA_LEN_MAX){
+            Log_print2(Diags_ENTRY, "-- buf:%d ready!! cnt:%d", SharebufStr.WIndex,SharebufStr.cnt);
+            SharebufStr.cnt++;
+            SharebufStr.buf[SharebufStr.WIndex].WIndex=0;
+            SharebufStr.buf[SharebufStr.WIndex].ReadEnable=1;
+            SharebufStr.WIndex=(SharebufStr.WIndex+1) % SHARE_BUFFER_COUNT;
+            // post sem
+            Semaphore_post(SharebufStr.SemShareDate);
+        }
+
+#endif
     }
 }
 
@@ -79,7 +99,7 @@ int Read_buffer(unsigned char  *p,unsigned int len)
     int res=0;
 
     if( SharebufStr.Tflag==1){
-
+#ifndef RECORD_16_CHANEL
        if(SharebufStr.buf[SharebufStr.RIndex].ReadEnable==1){
            memcpy(p,SharebufStr.buf[SharebufStr.RIndex].ptr,SHARE_DATA_LEN_MAX);
           // memset(p,SharebufStr.cnt,SHARE_DATA_LEN_MAX);
@@ -88,6 +108,16 @@ int Read_buffer(unsigned char  *p,unsigned int len)
            SharebufStr.RIndex = (SharebufStr.RIndex+1) % SHARE_BUFFER_COUNT;
            res=SHARE_DATA_LEN_MAX;
        }
+#else
+       if(SharebufStr.buf[SharebufStr.RIndex].ReadEnable==1){
+           memcpy(p,SharebufStr.buf[SharebufStr.RIndex].ptr,SHARE_DATA_LEN_MAX*RECORD_CHANEL_NUM);
+          // memset(p,SharebufStr.cnt,SHARE_DATA_LEN_MAX);
+           SharebufStr.buf[SharebufStr.RIndex].ReadEnable=0;
+           Log_print2(Diags_ENTRY, "-- read from buf: %d fb:%2x", SharebufStr.RIndex,*(SharebufStr.buf[SharebufStr.RIndex].ptr));
+           SharebufStr.RIndex = (SharebufStr.RIndex+1) % SHARE_BUFFER_COUNT;
+           res=SHARE_DATA_LEN_MAX;
+       }
+#endif
 
     }
     return res;
@@ -103,13 +133,13 @@ void Start_record(void)
         SharebufStr.buf[i].WIndex=0;
         SharebufStr.buf[i].ReadEnable=0;
     }
-    Semaphore_reset(SharebufStr.SemShareDate,0);
+    //Semaphore_reset(SharebufStr.SemShareDate,0);
 }
 
 void Stop_record(void)
 {
     int i;
     SharebufStr.Tflag = 0;
-    Semaphore_reset(SharebufStr.SemShareDate,0);
+    //Semaphore_reset(SharebufStr.SemShareDate,0);
     //
 }

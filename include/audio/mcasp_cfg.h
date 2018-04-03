@@ -126,7 +126,8 @@ extern ICodec_ChannelConfig AIC31_config;
 #define TX_NUM_SERIALIZER       (2u)
 #else
 #define RX_NUM_SERIALIZER       (8u)
-#define TX_NUM_SERIALIZER       (1u)
+#define TX_NUM_SERIALIZER       (2u)
+#define MIC_TX_NUM_SERIALIZER       (1u)
 #endif
 
 #ifdef __cplusplus

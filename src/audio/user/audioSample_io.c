@@ -111,10 +111,11 @@ extern HeapMem_Handle myHeap;
 #define BUFALIGN                128 /* alignment of buffer for use of L2 cache */
 
 //#define RECORD_16_TRACK 1
-#define RECORD_NUMS   1
-#define RECORD_BUF_LEN  (RECORD_NUMS*BUFLEN*4/2)
-
-
+#define RECORD_NUMS   16
+#define WORDS_PER_CHANEL_LEN  (BUFLEN/2)
+#define BYTES_PER_CHANEL_LEN  (WORDS_PER_CHANEL_LEN*4)
+#define WORDS_RECORD_BUF_LEN  (RECORD_NUMS*WORDS_PER_CHANEL_LEN)
+#define BYTES_RECORD_BUF_LEN  (WORD_RECORD_BUF_LEN*4)
 /* This is the number of buffers used by the application to be issued and reclaimed 
    This number can be higher than 2 (Ping pong) also. The McASP driver puts them in 
    a queue internally and process them in order and give back to the application */
@@ -130,7 +131,7 @@ Ptr  hAicChannel;
 /* Function prototype */
 static Void createStreams();
 static Void prime();
-
+uint32_t  datemp[WORDS_RECORD_BUF_LEN];
 Ptr rxbuf[NUM_BUFS];
 Ptr txbuf[NUM_BUFS];
 
@@ -547,8 +548,6 @@ Void Audio_echo_Task()
     unsigned char cnt=0;
     unsigned int cnnt1=0;
     unsigned int i,j;
-   // uint32_t  datemp[RECORD_BUF_LEN];
-    uint32_t  datemp[BUFLEN/2];
     Log_print0(Diags_ENTRY, " 20180303 enter audio task...:");
 
 #ifdef MEASURE_TIME
@@ -655,28 +654,19 @@ Void Audio_echo_Task()
 		   to the device here.
 		*/
 		cnt++;
-		j=0;
-#if 1
-		for(i=0;i<BUFLEN;i++){
-		   *(((uint32_t *)txbuf[gtxFrameIndexCount])+i) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*8+2));
-		   if(i%2==0){
-		       datemp[j]=(*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*8+2));
-		       j++;
-		   }
-		}
-
-        Write_buffer((uint8_t *)datemp,BUFLEN*2);
-#else
 	    //support 16s track record;
-		for(i=0;i<BUFLEN/2;i++){
-		      *(((uint32_t *)txbuf[gtxFrameIndexCount])+2*i) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*16+2));
-		      *(((uint32_t *)txbuf[gtxFrameIndexCount])+2*i+1) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*16+8+2));
-		      for(j=0;j<16;m++){
-		          datemp[i*16+j]=(*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*16+j));
+		for(i=0;i<WORDS_PER_CHANEL_LEN;i++){
+		      *(((uint32_t *)txbuf[gtxFrameIndexCount])+4*i) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*16+0));
+		      *(((uint32_t *)txbuf[gtxFrameIndexCount])+4*i+1) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*16+3));
+		      *(((uint32_t *)txbuf[gtxFrameIndexCount])+4*i+2) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*16+8+0));
+		      *(((uint32_t *)txbuf[gtxFrameIndexCount])+4*i+3) = (*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*16+8+3));
+		      for(j=0;j<16;j++){
+		          datemp[j*WORDS_PER_CHANEL_LEN+i]=(*(((uint32_t *)rxbuf[grxFrameIndexCount])+i*16+j));
+		          //datemp[j*WORDS_PER_CHANEL_LEN+i]=0x10000000+cnt;
 		      }
 		}
-        Write_buffer((uint8_t *)datemp,BUFLEN*32);
-#endif
+        Write_buffer((uint8_t *)datemp,BYTES_PER_CHANEL_LEN);
+
 
 		//memset((void *)((uint8_t *)txbuf[gtxFrameIndexCount]),0x55,tx_frame_size);
 
